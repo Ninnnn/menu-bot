@@ -40,7 +40,7 @@ def webhook():
         send_message(chat_id, "🔍 收到菜單！正在呼叫 Gemini，請稍候...")
         try:
             # 這裡我們先換回最標準的名稱測試
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-flash-latest')
             
             file_id = message["photo"][-1]["file_id"]
             image_bytes = get_telegram_image(file_id)
