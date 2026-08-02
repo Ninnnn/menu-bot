@@ -17,7 +17,6 @@ def send_message(chat_id, text):
     requests.post(url, json={"chat_id": chat_id, "text": text})
 
 def get_telegram_image(file_id):
-    # 取得照片下載路徑
     file_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile?file_id={file_id}"
     resp = requests.get(file_url).json()
     if not resp.get("ok"): return None
@@ -26,8 +25,13 @@ def get_telegram_image(file_id):
     download_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
     return requests.get(download_url).content
 
-@app.route('/api/webhook', methods=['POST'])
+# 這裡升級了！加入 GET 方法讓我們可以用瀏覽器直接測試
+@app.route('/api/webhook', methods=['POST', 'GET'])
 def webhook():
+    # 如果是用瀏覽器打開網址，會顯示這段文字
+    if request.method == 'GET':
+        return "Bot is alive! 機器人已經成功上線啦！"
+        
     update = request.get_json()
     if not update or "message" not in update:
         return jsonify({"status": "ok"})
@@ -39,7 +43,6 @@ def webhook():
     if "photo" in message:
         send_message(chat_id, "🔍 收到菜單！Gemini 正在為您翻譯中，請稍候...")
         try:
-            # 抓取最高畫質的照片
             file_id = message["photo"][-1]["file_id"]
             image_bytes = get_telegram_image(file_id)
             
