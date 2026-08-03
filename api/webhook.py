@@ -37,7 +37,7 @@ def webhook():
     chat_id = message["chat"]["id"]
 
     if "photo" in message:
-        send_message(chat_id, "🔍 收到菜單！正在呼叫 Gemini，請稍候...")
+        send_message(chat_id, "🔍 收到圖片！正在為您翻譯中，請稍候...")
         try:
             # 這裡我們先換回最標準的名稱測試
             model = genai.GenerativeModel('gemini-flash-latest')
@@ -47,7 +47,7 @@ def webhook():
             
             if image_bytes:
                 image_part = {"mime_type": "image/jpeg", "data": image_bytes}
-                prompt = "這是一張日本餐廳的菜單。請幫我將裡面的餐點名稱翻譯成繁體中文。格式：\n1. 日文原文 - 中文翻譯 (價格)\n2. 簡短特色說明（若為常見餐點可省略）"
+                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文，並盡量保持原有的段落排版。格式：\n1. 日文原文 - 中文翻譯 (價格)\n2. 簡短特色說明（若為常見餐點可省略）"
                 
                 response = model.generate_content([prompt, image_part])
                 clean_text = response.text.replace('*', '').replace('**', '').replace('### ', '').replace('###', '')
