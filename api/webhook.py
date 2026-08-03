@@ -50,7 +50,7 @@ def webhook():
                 prompt = "這是一張日本餐廳的菜單。請幫我將裡面的餐點名稱翻譯成繁體中文。格式：\n1. 日文原文 - 中文翻譯 (價格)\n2. 簡短特色說明（若為常見餐點可省略）"
                 
                 response = model.generate_content([prompt, image_part])
-                clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '')
+                clean_text = response.text.replace('*', '').replace('**', '').replace('### ', '').replace('###', '')
                 send_message(chat_id, clean_text)
             else:
                 send_message(chat_id, "❌ 無法讀取照片，請重新傳送。")
