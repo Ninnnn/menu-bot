@@ -89,7 +89,7 @@ def webhook():
                 prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
                 
                 response = model.generate_content(prompt)
-                clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
+                clean_text = response.text.replace('*', '').replace('**', '').replace('### ', '').replace('###', '').strip()
                 
                 # 先傳送文字翻譯結果
                 send_message(chat_id, clean_text)
