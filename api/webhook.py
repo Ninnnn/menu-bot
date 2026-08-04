@@ -2,6 +2,9 @@ import os
 import requests
 from flask import Flask, request, jsonify
 import google.generativeai as genai
+from gtts import gTTS
+import io
+import re
 
 app = Flask(__name__)
 
@@ -24,6 +27,23 @@ def get_telegram_image(file_id):
     download_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
     return requests.get(download_url).content
 
+# 這是新增的「傳送語音」功能
+def send_audio(chat_id, text, lang='ja'):
+    try:
+        # 將文字轉換為聲音
+        tts = gTTS(text=text, lang=lang)
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        
+        # 傳送聲音檔給 Telegram
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendAudio"
+        files = {'audio': ('voice.mp3', fp, 'audio/mpeg')}
+        data = {'chat_id': chat_id, 'title': '語音翻譯'}
+        requests.post(url, data=data, files=files)
+    except Exception as e:
+        send_message(chat_id, f"⚠️ 語音生成失敗：{str(e)}")
+
 @app.route('/api/webhook', methods=['POST', 'GET'])
 def webhook():
     if request.method == 'GET':
@@ -36,39 +56,55 @@ def webhook():
     message = update["message"]
     chat_id = message["chat"]["id"]
 
+    # =======【模式一：圖片翻譯模式】=======
     if "photo" in message:
         send_message(chat_id, "🔍 收到圖片！正在為您翻譯中，請稍候...")
         try:
-            # 這裡我們先換回最標準的名稱測試
             model = genai.GenerativeModel('gemini-flash-latest')
-            
             file_id = message["photo"][-1]["file_id"]
             image_bytes = get_telegram_image(file_id)
             
             if image_bytes:
                 image_part = {"mime_type": "image/jpeg", "data": image_bytes}
-                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文，並盡量保持原有的段落排版。格式：\n1. 日文原文 - 中文翻譯 (價格)\n2. 簡短特色說明（若為常見餐點可省略）"
+                # 這裡設定成：圖片全部翻譯成中文
+                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文，並盡量保持原有的段落排版。"
                 
                 response = model.generate_content([prompt, image_part])
-                clean_text = response.text.replace('*', '').replace('**', '').replace('### ', '').replace('###', '')
+                clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '')
                 send_message(chat_id, clean_text)
             else:
                 send_message(chat_id, "❌ 無法讀取照片，請重新傳送。")
         except Exception as e:
-            # 【超強抓蟲診斷器】如果失敗，讓程式自動抓取可用清單！
-            error_str = str(e)
-            try:
-                available = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-                error_str += "\n\n💡【系統診斷結果】您的金鑰目前支援以下模型：\n" + "\n".join(available)
-            except:
-                error_str += "\n\n無法獲取模型列表，可能是金鑰錯誤或權限未開。"
-            send_message(chat_id, f"❌ 錯誤詳情：\n{error_str}")
+            send_message(chat_id, f"❌ 處理時發生錯誤：{str(e)}")
             
+    # =======【模式二：文字雙向翻譯 + 語音模式】=======
     elif "text" in message:
-        if message["text"] == "/start":
-            send_message(chat_id, "👋 歡迎！請直接傳送「菜單照片」給我！")
+        user_text = message["text"]
+        if user_text == "/start":
+            send_message(chat_id, "👋 歡迎！請傳送「圖片」或「文字」給我，我來為您提供中日雙向翻譯與發音！")
         else:
-            send_message(chat_id, "📷 請直接傳送菜單照片給我哦！")
+            send_message(chat_id, "📝 收到文字！正在為您翻譯並產生語音...")
+            try:
+                model = genai.GenerativeModel('gemini-flash-latest')
+                prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
+                
+                response = model.generate_content(prompt)
+                clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
+                
+                # 先傳送文字翻譯結果
+                send_message(chat_id, clean_text)
+
+                # 智慧判斷發音語言：如果翻譯出來的結果包含日文假名，就用日文發音；否則用中文發音。
+                if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
+                    voice_lang = 'ja'
+                else:
+                    voice_lang = 'zh-TW'
+
+                # 傳送語音
+                send_audio(chat_id, clean_text, voice_lang)
+                
+            except Exception as e:
+                send_message(chat_id, f"❌ 文字翻譯時發生錯誤：{str(e)}")
 
     return jsonify({"status": "ok"})
 
