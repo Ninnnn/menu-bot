@@ -89,19 +89,28 @@ def webhook():
                 prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
                 
                 response = model.generate_content(prompt)
-                clean_text = response.text.replace('*', '').replace('**', '').replace('### ', '').replace('###', '').strip()
+                clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
                 
-                # 先傳送文字翻譯結果
-                send_message(chat_id, clean_text)
+                # 【新增功能】把整段文字按照「換行」拆成好幾段
+                lines = clean_text.split('\n')
+                
+                # 針對每一行獨立處理
+                for line in lines:
+                    line = line.strip()
+                    if not line: # 如果是空行就跳過不處理
+                        continue
+                        
+                    # 先傳送單句文字
+                    send_message(chat_id, line)
 
-                # 智慧判斷發音語言：如果翻譯出來的結果包含日文假名，就用日文發音；否則用中文發音。
-                if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
-                    voice_lang = 'ja'
-                else:
-                    voice_lang = 'zh-TW'
+                    # 智慧判斷單句發音語言
+                    if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', line):
+                        voice_lang = 'ja'
+                    else:
+                        voice_lang = 'zh-TW'
 
-                # 傳送語音
-                send_audio(chat_id, clean_text, voice_lang)
+                    # 傳送單句專屬語音
+                    send_audio(chat_id, line, voice_lang)
                 
             except Exception as e:
                 send_message(chat_id, f"❌ 文字翻譯時發生錯誤：{str(e)}")
