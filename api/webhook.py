@@ -91,26 +91,17 @@ def webhook():
                 response = model.generate_content(prompt)
                 clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
                 
-                # 【新增功能】把整段文字按照「換行」拆成好幾段
-                lines = clean_text.split('\n')
-                
-                # 針對每一行獨立處理
-                for line in lines:
-                    line = line.strip()
-                    if not line: # 如果是空行就跳過不處理
-                        continue
-                        
-                    # 先傳送單句文字
-                    send_message(chat_id, line)
+                # 【恢復清爽模式】直接把整段翻譯文字放在一個對話框傳送
+                send_message(chat_id, clean_text)
 
-                    # 智慧判斷單句發音語言
-                    if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', line):
-                        voice_lang = 'ja'
-                    else:
-                        voice_lang = 'zh-TW'
+                # 智慧判斷發音語言
+                if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
+                    voice_lang = 'ja'
+                else:
+                    voice_lang = 'zh-TW'
 
-                    # 傳送單句專屬語音
-                    send_audio(chat_id, line, voice_lang)
+                # 把整段文字合併成單一個語音檔傳送
+                send_audio(chat_id, clean_text, voice_lang)
                 
             except Exception as e:
                 send_message(chat_id, f"❌ 文字翻譯時發生錯誤：{str(e)}")
