@@ -91,17 +91,22 @@ def webhook():
                 response = model.generate_content(prompt)
                 clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
                 
-                # 【恢復清爽模式】直接把整段翻譯文字放在一個對話框傳送
+                # 1. 無論長短，先傳送文字翻譯結果
                 send_message(chat_id, clean_text)
 
-                # 智慧判斷發音語言
-                if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
-                    voice_lang = 'ja'
-                else:
-                    voice_lang = 'zh-TW'
+                # 2. 【保護機制】字數小於等於 100 字，才進行語音處理
+                if len(clean_text) <= 100:
+                    # 智慧判斷發音語言
+                    if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
+                        voice_lang = 'ja'
+                    else:
+                        voice_lang = 'zh-TW'
 
-                # 把整段文字合併成單一個語音檔傳送
-                send_audio(chat_id, clean_text, voice_lang)
+                    # 傳送語音檔
+                    send_audio(chat_id, clean_text, voice_lang)
+                else:
+                    # 字數超過 100 字，傳送貼心小提示，不生用語音以免當機
+                    send_message(chat_id, "💡 (翻譯字數超過 100 字，為維持系統速度，已自動省略語音朗讀)")
                 
             except Exception as e:
                 send_message(chat_id, f"❌ 文字翻譯時發生錯誤：{str(e)}")
