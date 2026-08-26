@@ -60,7 +60,7 @@ def webhook():
     if "photo" in message:
         send_message(chat_id, "🔍 收到圖片！正在為您翻譯中，請稍候...")
         try:
-            model = genai.GenerativeModel('gemini-flash-latest')
+            model = genai.GenerativeModel('gemini-3.6-flash')
             file_id = message["photo"][-1]["file_id"]
             image_bytes = get_telegram_image(file_id)
             
@@ -86,7 +86,7 @@ def webhook():
             send_message(chat_id, "📝 收到文字！正在為您光速翻譯中...")
             try:
                 # 【關鍵修改】直接指定最穩定的 2.5-flash 版本，不讓 Google 亂派發
-                model = genai.GenerativeModel('gemini-2.5-flash')
+                model = genai.GenerativeModel('gemini-3.6-flash')
                 prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
                 
                 response = model.generate_content(prompt)
