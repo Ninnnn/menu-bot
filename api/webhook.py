@@ -83,7 +83,7 @@ def webhook():
         if user_text == "/start":
             send_message(chat_id, "👋 歡迎！請傳送「圖片」或「文字」給我，我來為您提供中日雙向翻譯與發音！")
         else:
-            send_message(chat_id, "📝 到文字！正在為您光速翻譯中...")
+            send_message(chat_id, "📝 收到文字！正在為您光速翻譯中...")
             try:
                 model = genai.GenerativeModel('gemini-flash-latest')
                 prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
@@ -103,7 +103,7 @@ def webhook():
                         voice_lang = 'zh-TW'
 
                     # 傳送語音檔
-                    send_audio(chat_id, clean_text, voice_lang)
+                    # send_audio(chat_id, clean_text, voice_lang)
                 else:
                     # 字數超過 100 字，傳送貼心小提示，不生用語音以免當機
                     send_message(chat_id, "💡 (翻譯字數超過 100 字，為維持系統速度，已自動省略語音朗讀)")
