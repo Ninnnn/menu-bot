@@ -68,7 +68,7 @@ def webhook():
                 image_part = {"mime_type": "image/jpeg", "data": image_bytes}
                 # 這裡設定成：圖片全部翻譯成中文
                 prompt = # 這裡設定成：要求 AI 放棄空間模仿，改用適合手機閱讀的條列式清單
-                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文，並盡量保持原有的段落排版。"
+                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文，並盡量保持原有的段落排版，依序由左至右一行一行的往下翻譯，並且全部靠左對齊即可。"
                 response = model.generate_content([prompt, image_part])
                 clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '')
                 send_message(chat_id, clean_text)
