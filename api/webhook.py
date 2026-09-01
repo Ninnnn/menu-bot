@@ -67,8 +67,8 @@ def webhook():
             if image_bytes:
                 image_part = {"mime_type": "image/jpeg", "data": image_bytes}
                 # 這裡設定成：圖片全部翻譯成中文
-                prompt = "請幫我將這張圖片中的所有日文翻譯成流暢的繁體中文。【重要排版指令】：請務必「完全模仿」圖片中的文字排列空間！原本在哪裡換行、哪裡有大空格、哪裡分左右兩欄（例如左邊菜名、右邊價格），都請你用「空白鍵」和「換行符號」精準重現，讓文字的回覆格式看起來就像原圖的骨架一樣。"
-                
+                prompt = # 這裡設定成：要求 AI 放棄空間模仿，改用適合手機閱讀的條列式清單
+                prompt = "請幫我將這張圖片中的日文翻譯成流暢的繁體中文。因為圖片排版較複雜（例如菜單），【重要排版指令】：請「不要」嘗試用空格模仿原圖的版面。請直接幫我按照圖片中的「區塊分類」，整理成清晰的「條列式清單」（例如：【品名】單點價格 / 套餐價格），讓我在手機上能快速上下滑動閱讀即可。"
                 response = model.generate_content([prompt, image_part])
                 clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '')
                 send_message(chat_id, clean_text)
