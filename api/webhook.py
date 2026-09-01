@@ -80,20 +80,38 @@ def webhook():
     # =======【模式二：文字雙向翻譯 + 語音模式】=======
     elif "text" in message:
         user_text = message["text"]
+        
+        # 1. 判斷是否需要語音 (檢查開頭是否為 /v )
+        need_voice = False
+        if user_text.lower().startswith('/v '):
+            need_voice = True
+            user_text = user_text[3:] # 把 '/v ' 這三個字元切掉，只拿後面的句子去翻譯
+            
         if user_text == "/start":
-            send_message(chat_id, "👋 歡迎！請傳送「圖片」或「文字」給我，我來為您提供中日雙向翻譯與發音！")
+            send_message(chat_id, "👋 歡迎！\n👉 直接傳送文字：極速純翻譯\n👉 文字前加上「/v 」：翻譯＋語音\n(例如：/v 請問廁所在哪裡)")
         else:
             send_message(chat_id, "📝 收到文字！正在為您光速翻譯中...")
             try:
-                # 【關鍵修改】直接指定最穩定的 2.5-flash 版本，不讓 Google 亂派發
                 model = genai.GenerativeModel('gemini-3.6-flash')
                 prompt = f"請幫我翻譯以下內容：\n如果這段文字是日文，請翻譯成流暢的繁體中文。\n如果這段文字是中文，請翻譯成自然、有禮貌的日文。\n【重要指令】請直接輸出翻譯結果，絕對不要加上任何多餘的解釋或引言文字。\n\n{user_text}"
                 
                 response = model.generate_content(prompt)
                 clean_text = response.text.replace('**', '').replace('### ', '').replace('###', '').strip()
                 
-                # 1. 無論長短，先傳送文字翻譯結果
+                # 2. 無論如何，先傳送文字翻譯結果
                 send_message(chat_id, clean_text)
+                
+                # 3. 如果使用者有下達 /v 指令，才啟動語音系統
+                if need_voice:
+                    if len(clean_text) <= 100:
+                        if re.search(r'[\u3040-\u309F\u30A0-\u30FF]', clean_text):
+                            voice_lang = 'ja'
+                        else:
+                            voice_lang = 'zh-TW'
+                        # 傳送語音檔
+                        send_audio(chat_id, clean_text, voice_lang)
+                    else:
+                        send_message(chat_id, "💡 (翻譯字數超過 100 字，為維持系統速度，已自動省略語音朗讀)")
                 
             except Exception as e:
                 send_message(chat_id, f"❌ 文字翻譯時發生錯誤：{str(e)}")
